@@ -1,0 +1,118 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Online IOST Transaction Signature Tool</title>
+		<meta name="description" content="An security and online IOST transaction signature tool"/>
+		<script src="wasm_exec.js"></script>
+	</head>
+	<body>
+		<h1>Online IOST Transaction Signature Tool</h1>
+		<h3><i>for ED25519 privatekey format only</i></h3>
+		<hr>
+
+		<div id="notes" style="display: block;">
+			<h3>Notice</h3>
+			<ul>
+				<li>This is a pure browser application, no http request or traffic should exist after webpage loaded</li>
+				<li>No cookie or local storage will be used in this site</li>
+				<li>You are strongly recommended to set the network to OFFLINE in case of any potential phishing or risk, and recover the connection after you have this page closed</li>
+				<li>Currently we support ED25519 encoding private key only</li>
+				<li>No warranties and use at your own risk</li>
+
+			</ul>
+			<h3>须知</h3>
+			<ul>
+				<li>这是一个纯网页端的应用。在应用加载完毕后，不应该出现任何网络请求，也不会向任何后端传输任何数据</li>
+				<li>这个页面不使用任何Cookies或本地存储，刷新后也不会保留任何资料</li>
+				<li>我们强烈建议你在网页加载完成后，将本地电脑断网。获得并保存好签名后，关闭此网页再允许计算机联网</li>
+				<li>我们目前只支持ED25519编码的私钥进行请求签名</li>
+				<li>本项目不承担因任何方式使用导致的任何后果，请酌情使用</li>
+			</ul>
+
+			<br>
+			<button onclick="acceptLicense()">I Accept the Terms of Use! 我接受使用许可 !</button>
+			
+		</div>
+
+		<div id="content" style="display: none;">
+			<div id="loadingpanel" style="display: block">
+				<br>
+				Loading Web Application( about 25MB ), please wait patiently...
+			</div>
+			
+			<div id="contentpanel" style="display: none">
+				<strong>1. Transaction JSON Content</strong> <i style="color: grey; font-size: 80%;">(input the content of iwallet --output tx.json) or upload</i><br>
+				<input type="file" id="txfile" />
+				<br>
+				<textarea style="width: 80%;" name="contract" id="contract" rows="25" placeholder="Transaction JSON file content""></textarea>
+				<br><br>
+				<strong>2. Private Key</strong> <i style="color: grey; font-size: 70%;">in ED25519 encoding</i><br><b style="color: red; font-size: 80%">ALWAYS KEEP THIS KEY SAFE AND CLASSIFIED!!!!!!</b><br>
+				<input style="width: 620px;" type="text" id="privatekey" placeholder="Input your private key here...">
+				<br><br>
+				<button id="btnsign" onclick="sign()"> Signature Now !</button>
+
+				<br><br><br>
+				<div id="resultpanel" style="display:none">
+					<strong>3. Signature Output</strong><br>
+					<i style="color: green; font-size: 80%;">You may want to copy and paste the signature to whoever needed</i><br>
+					<textarea style="width: 80%;" name="sigout" id="sigout" rows="6" readonly></textarea>
+				</div>
+			</div>
+		</div>
+	</body>
+
+	<script>
+
+		function acceptLicense() {
+			document.getElementById("notes").style.display = "none";
+			document.getElementById("content").style.display = "block";
+		}
+
+		function handleFileSelect() {
+			var file = document.getElementById("txfile").files[0];
+			var reader = new FileReader();
+			reader.onload = function (e) {
+				document.getElementById("contract").value = e.target.result;
+			};
+			reader.readAsText(file);
+		}
+
+		document.getElementById('txfile').addEventListener('change', handleFileSelect, false);
+		
+		const go = new Go();
+		WebAssembly.instantiateStreaming(fetch("app_3woj8trq2398ftwy.wasm"), go.importObject).then((result) => {
+			go.run(result.instance);
+			document.getElementById("loadingpanel").style.display = "none";
+			document.getElementById("contentpanel").style.display = "block";
+		});
+
+		function sign() {
+			document.getElementById("resultpanel").style.display = "none";
+			var contract = document.getElementById("contract").value;
+			var privatekey = document.getElementById("privatekey").value;
+
+			if (contract == "") {
+				alert('Error: Please select the transaction file or input the transaction content!');
+				return;
+			}
+			
+			if (privatekey == "") {
+				alert('Error: Please input and double check the private key!');
+				return;
+			}
+			
+			var result = window.calculate(contract, privatekey);
+			if (result == null) {
+				setTimeout(function(){alert('Unable to generate the signature due to invalid transactions or private key encoding');}, 1);
+			} else {
+				document.getElementById("sigout").value = result;
+				document.getElementById("privatekey").value = "";
+				document.getElementById("resultpanel").style.display = "block";
+				document.getElementById("sigout").focus();
+				document.getElementById("sigout").select();
+			}
+		};
+		
+	</script>
+	
+</html>
